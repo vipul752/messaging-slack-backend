@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
@@ -33,10 +34,18 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.pre('save', function (next) {
+userSchema.pre('save', async function () {
   const user = this;
+
+  if (!user.isModified('password')) {
+    return;
+  }
+
+  const SALT = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(user.password, SALT);
+  user.password = hashedPassword;
+
   user.avatar = `https://robohash.org/${user.username}`;
-  next();
 });
 
 const User = mongoose.model('User', userSchema);
